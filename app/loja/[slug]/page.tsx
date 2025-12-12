@@ -71,6 +71,16 @@ export default function LojaPage() {
   const [loading, setLoading] = useState(true)
   const [newReview, setNewReview] = useState({ userName: '', rating: 0, comment: '' })
 
+  // Forçar zoom fixo de 85% em mobile
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+      const viewport = document.querySelector('meta[name="viewport"]')
+      if (viewport) {
+        viewport.setAttribute('content', 'width=device-width, initial-scale=0.85, maximum-scale=0.85, minimum-scale=0.85, user-scalable=no')
+      }
+    }
+  }, [])
+
   useEffect(() => {
     fetchStore()
   }, [slug])
@@ -225,7 +235,7 @@ export default function LojaPage() {
             }}
           />
           <h1 className="text-4xl font-bold text-white mb-2">{}</h1>
-          <p className="text-2xl font-semibold text-yellow-gold">CARDÁPIO</p>
+          <p className="text-2xl font-semibold text-yellow-gold">NOSSO MAGNIFICO CARDÁPIO</p>
         </div>
       </header>
 
