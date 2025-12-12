@@ -586,6 +586,7 @@ export default function LojaPage() {
           {/* Linha Inferior: Copyright (última coisa) */}
           <div className="text-center pt-4 border-t border-red-dark">
             <p className="text-xs opacity-80">Cardápio Digital © 2025</p>
+            <p className="text-[10px] opacity-60 mt-1">Feito por Emen Jose</p>
           </div>
         </div>
       </footer>
