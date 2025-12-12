@@ -128,29 +128,29 @@ export default function DashboardContent({ session }: { session: any }) {
     <div className="bg-red-strong min-h-screen">
       {/* Header */}
       <header className="bg-red-strong border-b-2 border-red-dark text-white p-4 shadow-lg">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-3">
+        <div className="container mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 px-2 sm:px-4">
+          <div className="flex items-center gap-2 sm:gap-3">
             <img 
               src="/logo-frango-dourado.png" 
               alt="Logo"
-              className="h-10 w-auto object-contain"
+              className="h-8 sm:h-10 w-auto object-contain"
               onError={(e) => {
                 e.currentTarget.style.display = 'none'
               }}
             />
-            <h1 className="text-2xl font-bold"></h1>
+            <h1 className="text-lg sm:text-2xl font-bold"></h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
             <Link
               href={`/loja/${store.slug}`}
               target="_blank"
-              className="bg-yellow-gold text-black-dark px-4 py-2 rounded-lg hover:bg-opacity-90 transition font-semibold text-sm"
+              className="bg-yellow-gold text-black-dark px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-opacity-90 transition font-semibold text-xs sm:text-sm flex-1 sm:flex-initial text-center"
             >
               Ver Cardápio
             </Link>
             <button
               onClick={() => signOut()}
-              className="bg-red-dark px-4 py-2 rounded-lg hover:bg-opacity-90 transition text-sm font-semibold"
+              className="bg-red-dark px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-opacity-90 transition text-xs sm:text-sm font-semibold flex-1 sm:flex-initial"
             >
               Sair
             </button>
@@ -158,7 +158,7 @@ export default function DashboardContent({ session }: { session: any }) {
         </div>
       </header>
 
-      <div className="container mx-auto p-4 max-w-7xl overflow-x-hidden">
+      <div className="container mx-auto p-2 sm:p-4 max-w-7xl overflow-x-hidden w-full">
         {/* Mensagens */}
         {message && (
           <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg mb-4">
@@ -173,7 +173,7 @@ export default function DashboardContent({ session }: { session: any }) {
         )}
 
         {/* Grid Layout - Organizado */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6 w-full max-w-full overflow-x-hidden">
           {/* QR Code Section - Lado Esquerdo */}
           <div className="lg:col-span-2 bg-white rounded-lg shadow-lg p-6 border-2 border-red-dark">
             <h2 className="text-2xl font-bold text-black-dark mb-4">QR Code do Cardápio</h2>
@@ -308,11 +308,11 @@ export default function DashboardContent({ session }: { session: any }) {
         {/* Tabs e Conteúdo Principal */}
         <div className="bg-white rounded-lg shadow-lg border-2 border-red-dark overflow-hidden max-w-full">
           {/* Tabs */}
-          <div className="bg-gray-50 border-b-2 border-red-dark p-4">
-            <nav className="flex gap-2">
+          <div className="bg-gray-50 border-b-2 border-red-dark p-2 sm:p-4 overflow-x-auto">
+            <nav className="flex gap-2 min-w-max sm:min-w-0">
               <button
                 onClick={() => setActiveTab('categories')}
-                className={`px-6 py-2 rounded-lg transition font-semibold text-sm ${
+                className={`px-4 sm:px-6 py-2 rounded-lg transition font-semibold text-xs sm:text-sm whitespace-nowrap ${
                   activeTab === 'categories'
                     ? 'bg-red-strong text-white'
                     : 'bg-white text-black-dark hover:bg-red-dark hover:text-white border-2 border-red-dark'
@@ -322,7 +322,7 @@ export default function DashboardContent({ session }: { session: any }) {
               </button>
               <button
                 onClick={() => setActiveTab('products')}
-                className={`px-6 py-2 rounded-lg transition font-semibold text-sm ${
+                className={`px-4 sm:px-6 py-2 rounded-lg transition font-semibold text-xs sm:text-sm whitespace-nowrap ${
                   activeTab === 'products'
                     ? 'bg-red-strong text-white'
                     : 'bg-white text-black-dark hover:bg-red-dark hover:text-white border-2 border-red-dark'
@@ -332,7 +332,7 @@ export default function DashboardContent({ session }: { session: any }) {
               </button>
               <button
                 onClick={() => setActiveTab('reviews')}
-                className={`px-6 py-2 rounded-lg transition font-semibold text-sm ${
+                className={`px-4 sm:px-6 py-2 rounded-lg transition font-semibold text-xs sm:text-sm whitespace-nowrap ${
                   activeTab === 'reviews'
                     ? 'bg-red-strong text-white'
                     : 'bg-white text-black-dark hover:bg-red-dark hover:text-white border-2 border-red-dark'
@@ -344,7 +344,7 @@ export default function DashboardContent({ session }: { session: any }) {
           </div>
 
           {/* Conteúdo */}
-          <div className="p-6 overflow-x-hidden">
+          <div className="p-3 sm:p-6 overflow-x-hidden w-full max-w-full">
             {activeTab === 'categories' && (
               <CategoriesSection storeId={store.id} onUpdate={fetchStore} />
             )}
@@ -708,14 +708,14 @@ function ProductsSection({
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold text-black-dark">Produtos</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 mb-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-black-dark">Produtos</h2>
         <button
           onClick={() => {
             setShowForm(true)
             setEditingProduct(null)
           }}
-          className="bg-red-strong text-white px-4 py-2 rounded font-semibold hover:bg-red-dark transition"
+          className="bg-red-strong text-white px-4 py-2 rounded font-semibold hover:bg-red-dark transition text-sm sm:text-base w-full sm:w-auto"
         >
           + Novo Produto
         </button>
@@ -911,27 +911,27 @@ function ProductsSection({
         </div>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-4 w-full max-w-full overflow-x-hidden">
         {filteredProducts.map((product) => (
-          <div key={product.id} className="bg-white p-4 rounded-lg border-2 border-red-dark hover:shadow-md transition-shadow w-full">
-            <div className="flex gap-4 items-start w-full">
+          <div key={product.id} className="bg-white p-3 sm:p-4 rounded-lg border-2 border-red-dark hover:shadow-md transition-shadow w-full max-w-full overflow-hidden">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start w-full">
               {/* Imagem do Produto */}
               {product.image && (
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 w-full sm:w-auto">
                   <img 
                     src={product.image} 
                     alt={product.name} 
-                    className="w-24 h-24 object-cover rounded border border-gray-200" 
+                    className="w-full sm:w-24 h-32 sm:h-24 object-cover rounded border border-gray-200" 
                   />
                 </div>
               )}
               
               {/* Informações do Produto */}
-              <div className="flex-1 min-w-0 pr-2">
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <h3 className="font-bold text-lg text-black-dark break-words flex-1 min-w-0">{product.name}</h3>
+              <div className="flex-1 min-w-0 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                  <h3 className="font-bold text-base sm:text-lg text-black-dark break-words flex-1 min-w-0">{product.name}</h3>
                   <span
-                    className={`text-xs px-3 py-1 rounded-full font-semibold flex-shrink-0 ${
+                    className={`text-xs px-3 py-1 rounded-full font-semibold flex-shrink-0 self-start sm:self-auto ${
                       product.isAvailable
                         ? 'bg-green-100 text-green-700'
                         : 'bg-red-100 text-red-700'
@@ -943,8 +943,8 @@ function ProductsSection({
                 {product.description && (
                   <p className="text-sm text-gray-600 mb-2 break-words">{product.description}</p>
                 )}
-                <div className="flex items-center gap-4 flex-wrap">
-                  <p className="text-base font-bold text-red-strong">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                  <p className="text-sm sm:text-base font-bold text-red-strong">
                     Preço: MT {product.price.toFixed(0)}
                   </p>
                   <p className="text-xs text-gray-500">
@@ -954,10 +954,10 @@ function ProductsSection({
               </div>
 
               {/* Botões de Ação */}
-              <div className="flex flex-col gap-2 flex-shrink-0">
+              <div className="flex flex-row sm:flex-col gap-2 flex-shrink-0 w-full sm:w-auto">
                 <button
                   onClick={() => handleToggle(product.id)}
-                  className="bg-yellow-gold text-black-dark px-4 py-2 rounded-lg text-sm font-semibold hover:bg-opacity-90 transition whitespace-nowrap"
+                  className="bg-yellow-gold text-black-dark px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold hover:bg-opacity-90 transition flex-1 sm:flex-initial whitespace-nowrap"
                 >
                   {product.isAvailable ? 'Desativar' : 'Ativar'}
                 </button>
@@ -966,13 +966,13 @@ function ProductsSection({
                     setEditingProduct(product)
                     setShowForm(true)
                   }}
-                  className="bg-yellow-gold text-black-dark px-4 py-2 rounded-lg text-sm font-semibold hover:bg-opacity-90 transition whitespace-nowrap"
+                  className="bg-yellow-gold text-black-dark px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold hover:bg-opacity-90 transition flex-1 sm:flex-initial whitespace-nowrap"
                 >
                   Editar
                 </button>
                 <button
                   onClick={() => handleDelete(product.id)}
-                  className="bg-red-strong text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-dark transition whitespace-nowrap"
+                  className="bg-red-strong text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold hover:bg-red-dark transition flex-1 sm:flex-initial whitespace-nowrap"
                 >
                   Remover
                 </button>
@@ -1093,36 +1093,38 @@ function ReviewsSection({ storeId }: { storeId: number }) {
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 w-full max-w-full overflow-x-hidden">
           {reviews.map((review) => (
             <div
               key={review.id}
-              className="bg-white border-2 border-red-dark rounded-lg p-4 hover:shadow-md transition-shadow"
+              className="bg-white border-2 border-red-dark rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow w-full max-w-full overflow-hidden"
             >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-bold text-black-dark text-lg">{review.userName}</h3>
-                    <div className="flex items-center">
-                      <StarRating rating={review.rating} size="sm" />
+              <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4 w-full">
+                <div className="flex-1 min-w-0 w-full sm:w-auto">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                    <h3 className="font-bold text-black-dark text-base sm:text-lg break-words">{review.userName}</h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center">
+                        <StarRating rating={review.rating} size="sm" />
+                      </div>
+                      <span className="text-xs sm:text-sm text-black-dark opacity-70">
+                        {formatDate(review.createdAt)}
+                      </span>
                     </div>
-                    <span className="text-sm text-black-dark opacity-70">
-                      {formatDate(review.createdAt)}
-                    </span>
                   </div>
                   
                   {review.product && (
-                    <p className="text-sm text-red-strong font-semibold mb-2">
+                    <p className="text-xs sm:text-sm text-red-strong font-semibold mb-2 break-words">
                       Produto: {review.product.name}
                     </p>
                   )}
                   
-                  <p className="text-black-dark">{review.comment}</p>
+                  <p className="text-sm sm:text-base text-black-dark break-words">{review.comment}</p>
                 </div>
                 
                 <button
                   onClick={() => handleDelete(review.id)}
-                  className="bg-red-strong text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-dark transition whitespace-nowrap flex-shrink-0"
+                  className="bg-red-strong text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold hover:bg-red-dark transition whitespace-nowrap flex-shrink-0 w-full sm:w-auto"
                   title="Excluir avaliação"
                 >
                   Excluir
