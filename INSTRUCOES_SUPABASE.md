@@ -90,3 +90,4 @@ Após executar a migração, você pode verificar:
 - O bucket `product-images` deve ser público para as imagens aparecerem no cardápio
 - As políticas RLS permitem leitura pública e escrita apenas para autenticados
 
+

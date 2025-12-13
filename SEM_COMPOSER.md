@@ -39,3 +39,4 @@ Abra no navegador: `http://localhost:8000/login`
 O projeto não precisa do Composer para funcionar. A única dependência (dotenv) foi removida e substituída por configuração direta.
 
 
+

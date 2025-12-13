@@ -5,6 +5,9 @@ import { signOut } from 'next-auth/react'
 import Link from 'next/link'
 import * as QRCode from 'qrcode'
 import StarRating from '@/components/StarRating'
+import OrdersSection from '@/components/OrdersSection'
+import TablesSection from '@/components/TablesSection'
+import AttendantCallsSection from '@/components/AttendantCallsSection'
 
 interface Store {
   id: number
@@ -18,6 +21,10 @@ interface Store {
   instagramUrl?: string
   whatsappUrl?: string
   appUrl?: string
+  mpesaName?: string
+  mpesaPhone?: string
+  emolaName?: string
+  emolaPhone?: string
   categories: Category[]
   products: Product[]
 }
@@ -37,6 +44,7 @@ interface Product {
   image?: string
   isAvailable: boolean
   isHot?: boolean
+  preparationTime?: number
   category: Category
   categoryId: number
 }
@@ -58,7 +66,7 @@ export default function DashboardContent({ session }: { session: any }) {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
-  const [activeTab, setActiveTab] = useState<'categories' | 'products' | 'reviews'>('categories')
+  const [activeTab, setActiveTab] = useState<'categories' | 'products' | 'reviews' | 'orders' | 'tables' | 'attendant-calls'>('categories')
 
   useEffect(() => {
     fetchStore()
@@ -226,7 +234,7 @@ export default function DashboardContent({ session }: { session: any }) {
 
           {/* Redes Sociais e App - Lado Direito */}
           <div className="bg-white rounded-lg shadow-lg p-6 border-2 border-red-dark">
-            <h2 className="text-xl font-bold text-black-dark mb-4">Redes Sociais</h2>
+            <h2 className="text-xl font-bold text-black-dark mb-4">Configurações</h2>
           <form onSubmit={async (e) => {
             e.preventDefault()
             const formData = new FormData(e.currentTarget)
@@ -239,7 +247,12 @@ export default function DashboardContent({ session }: { session: any }) {
               instagramUrl: formData.get('instagramUrl') || undefined,
               whatsappUrl: formData.get('whatsappUrl') || undefined,
               appUrl: formData.get('appUrl') || undefined,
+              mpesaName: formData.get('mpesaName') || undefined,
+              mpesaPhone: formData.get('mpesaPhone') || undefined,
+              emolaName: formData.get('emolaName') || undefined,
+              emolaPhone: formData.get('emolaPhone') || undefined,
             }
+            console.log('Enviando dados para atualizar:', data)
             try {
               const res = await fetch('/api/stores', {
                 method: 'PUT',
@@ -247,12 +260,18 @@ export default function DashboardContent({ session }: { session: any }) {
                 body: JSON.stringify(data),
               })
               if (res.ok) {
-                setMessage('Redes sociais atualizadas!')
+                setMessage('Configurações atualizadas!')
                 fetchStore()
                 setTimeout(() => setMessage(''), 3000)
+              } else {
+                const errorData = await res.json()
+                setError(errorData.error || 'Erro ao atualizar configurações')
+                setTimeout(() => setError(''), 5000)
               }
             } catch (err) {
-              setError('Erro ao atualizar redes sociais')
+              console.error('Error updating store:', err)
+              setError('Erro ao atualizar configurações')
+              setTimeout(() => setError(''), 5000)
             }
           }} className="space-y-3">
               <div>
@@ -294,6 +313,51 @@ export default function DashboardContent({ session }: { session: any }) {
                   className="w-full px-3 py-2 text-sm border-2 border-red-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-red-strong"
                   placeholder="https://play.google.com/..."
                 />
+              </div>
+              <div className="border-t-2 border-gray-200 pt-3 mt-3">
+                <h3 className="text-sm font-bold text-black-dark mb-2">Métodos de Pagamento</h3>
+                
+                <div className="mb-3">
+                  <label className="block text-xs font-semibold text-black-dark mb-1">M-Pesa - Nome da Empresa</label>
+                  <input
+                    type="text"
+                    name="mpesaName"
+                    defaultValue={store.mpesaName || ''}
+                    className="w-full px-3 py-2 text-sm border-2 border-red-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-red-strong"
+                    placeholder="Ex: M-Pesa Moçambique"
+                  />
+                </div>
+                <div className="mb-3">
+                  <label className="block text-xs font-semibold text-black-dark mb-1">M-Pesa - Número</label>
+                  <input
+                    type="tel"
+                    name="mpesaPhone"
+                    defaultValue={store.mpesaPhone || ''}
+                    className="w-full px-3 py-2 text-sm border-2 border-red-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-red-strong"
+                    placeholder="+258 XXX XXX XXX"
+                  />
+                </div>
+                
+                <div className="mb-3">
+                  <label className="block text-xs font-semibold text-black-dark mb-1">Emola - Nome da Empresa</label>
+                  <input
+                    type="text"
+                    name="emolaName"
+                    defaultValue={store.emolaName || ''}
+                    className="w-full px-3 py-2 text-sm border-2 border-red-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-red-strong"
+                    placeholder="Ex: Emola"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-black-dark mb-1">Emola - Número</label>
+                  <input
+                    type="tel"
+                    name="emolaPhone"
+                    defaultValue={store.emolaPhone || ''}
+                    className="w-full px-3 py-2 text-sm border-2 border-red-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-red-strong"
+                    placeholder="+258 XXX XXX XXX"
+                  />
+                </div>
               </div>
               <button
                 type="submit"
@@ -340,6 +404,36 @@ export default function DashboardContent({ session }: { session: any }) {
               >
                 Avaliações
               </button>
+              <button
+                onClick={() => setActiveTab('orders')}
+                className={`px-4 sm:px-6 py-2 rounded-lg transition font-semibold text-xs sm:text-sm whitespace-nowrap ${
+                  activeTab === 'orders'
+                    ? 'bg-red-strong text-white'
+                    : 'bg-white text-black-dark hover:bg-red-dark hover:text-white border-2 border-red-dark'
+                }`}
+              >
+                Pedidos
+              </button>
+              <button
+                onClick={() => setActiveTab('tables')}
+                className={`px-4 sm:px-6 py-2 rounded-lg transition font-semibold text-xs sm:text-sm whitespace-nowrap ${
+                  activeTab === 'tables'
+                    ? 'bg-red-strong text-white'
+                    : 'bg-white text-black-dark hover:bg-red-dark hover:text-white border-2 border-red-dark'
+                }`}
+              >
+                Mesas
+              </button>
+              <button
+                onClick={() => setActiveTab('attendant-calls')}
+                className={`px-4 sm:px-6 py-2 rounded-lg transition font-semibold text-xs sm:text-sm whitespace-nowrap relative ${
+                  activeTab === 'attendant-calls'
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-white text-black-dark hover:bg-orange-500 hover:text-white border-2 border-orange-500'
+                }`}
+              >
+                🔔 Atendente
+              </button>
             </nav>
           </div>
 
@@ -355,6 +449,18 @@ export default function DashboardContent({ session }: { session: any }) {
 
             {activeTab === 'reviews' && (
               <ReviewsSection storeId={store.id} />
+            )}
+
+            {activeTab === 'orders' && (
+              <OrdersSection storeId={store.id} />
+            )}
+
+            {activeTab === 'tables' && (
+              <TablesSection storeId={store.id} />
+            )}
+
+            {activeTab === 'attendant-calls' && (
+              <AttendantCallsSection storeId={store.id} />
             )}
           </div>
         </div>
@@ -638,6 +744,7 @@ function ProductsSection({
       image: (formData.get('image') as string) || undefined,
       isAvailable: formData.get('is_available') === 'on',
       isHot: formData.get('is_hot') === 'on',
+      preparationTime: parseInt(formData.get('preparation_time') as string) || 5,
     }
 
     try {
@@ -817,6 +924,19 @@ function ProductsSection({
                 required
                 className="w-full px-4 py-2 border-2 border-red-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-red-strong"
               />
+            </div>
+            <div>
+              <label className="block text-black-dark font-semibold mb-2">Tempo de Preparo (minutos)</label>
+              <input
+                type="number"
+                name="preparation_time"
+                step="1"
+                min="1"
+                defaultValue={editingProduct?.preparationTime || 5}
+                required
+                className="w-full px-4 py-2 border-2 border-red-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-red-strong"
+              />
+              <p className="text-xs text-gray-500 mt-1">Tempo estimado para preparar este produto</p>
             </div>
             <div>
               <label className="block text-black-dark font-semibold mb-2">Imagem</label>

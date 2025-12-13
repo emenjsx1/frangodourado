@@ -1,9 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import StarRating from '@/components/StarRating'
 import DripSeparator from '@/components/DripSeparator'
+import Cart, { CartItem } from '@/components/Cart'
+import CheckoutModal from '@/components/CheckoutModal'
+import PaymentModal from '@/components/PaymentModal'
+import CallAttendantButton from '@/components/CallAttendantButton'
 
 interface Store {
   id: number
@@ -17,6 +21,10 @@ interface Store {
   instagramUrl?: string
   whatsappUrl?: string
   appUrl?: string
+  mpesaName?: string
+  mpesaPhone?: string
+  emolaName?: string
+  emolaPhone?: string
   categories: Category[]
 }
 
@@ -70,6 +78,12 @@ export default function LojaPage() {
   const [reviewCount, setReviewCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [newReview, setNewReview] = useState({ userName: '', rating: 0, comment: '' })
+  const [cartItems, setCartItems] = useState<CartItem[]>([])
+  const [isCartOpen, setIsCartOpen] = useState(false)
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false)
+  const [checkoutData, setCheckoutData] = useState<{ customerName: string; customerPhone: string; tableId: number } | null>(null) // tableId pode ser 0 para retirada no caixa
+  const router = useRouter()
 
   // Forçar zoom fixo de 85% em mobile
   useEffect(() => {
@@ -202,6 +216,103 @@ export default function LojaPage() {
     }
   }
 
+  // Funções do carrinho
+  const addToCart = (product: Product) => {
+    const existingItem = cartItems.find(item => item.productId === product.id)
+    if (existingItem) {
+      updateCartItem(product.id, { quantity: existingItem.quantity + 1 })
+    } else {
+      setCartItems([...cartItems, {
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        image: product.image,
+        quantity: 1,
+        notes: '',
+      }])
+    }
+    setIsCartOpen(true)
+  }
+
+  const updateCartItem = (productId: number, updates: Partial<CartItem>) => {
+    setCartItems(cartItems.map(item =>
+      item.productId === productId ? { ...item, ...updates } : item
+    ))
+  }
+
+  const removeCartItem = (productId: number) => {
+    setCartItems(cartItems.filter(item => item.productId !== productId))
+  }
+
+  const handleCheckoutContinue = (data: { customerName: string; customerPhone: string; tableId: number }) => {
+    setCheckoutData(data)
+    setIsCheckoutOpen(false)
+    setIsPaymentOpen(true)
+  }
+
+  const handlePaymentComplete = async (paymentMethod: 'cash' | 'mpesa' | 'emola' | 'pos', receiptFile?: File) => {
+    if (!checkoutData || !store) return
+
+    try {
+      // Criar pedido primeiro (sem receipt_id se for M-Pesa/Emola)
+      const orderRes = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          storeSlug: store.slug,
+          tableId: checkoutData.tableId,
+          customerName: checkoutData.customerName,
+          customerPhone: checkoutData.customerPhone,
+          paymentMethod,
+          items: cartItems.map(item => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            notes: item.notes,
+          })),
+        }),
+      })
+
+      if (!orderRes.ok) {
+        const error = await orderRes.json()
+        throw new Error(error.error || 'Erro ao criar pedido')
+      }
+
+      const order = await orderRes.json()
+
+      // Se tiver comprovante, fazer upload agora
+      if (receiptFile && (paymentMethod === 'mpesa' || paymentMethod === 'emola')) {
+        const formData = new FormData()
+        formData.append('file', receiptFile)
+        formData.append('order_id', order.id.toString())
+        formData.append('payment_method', paymentMethod)
+
+        const receiptRes = await fetch('/api/payments/receipt', {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (receiptRes.ok) {
+          const receipt = await receiptRes.json()
+          // Atualizar pedido com receipt_id
+          await fetch(`/api/orders/${order.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ receiptId: receipt.id }),
+          })
+        }
+      }
+
+      // Limpar carrinho e redirecionar
+      setCartItems([])
+      setIsPaymentOpen(false)
+      setIsCartOpen(false)
+      router.push(`/loja/${store.slug}/pedidos?phone=${encodeURIComponent(checkoutData.customerPhone)}`)
+    } catch (error: any) {
+      console.error('Error completing payment:', error)
+      alert(error.message || 'Erro ao processar pedido. Tente novamente.')
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-red-strong">
@@ -225,17 +336,38 @@ export default function LojaPage() {
     <div className="min-h-screen bg-red-strong">
       {/* Header com Logo e Cores do Design */}
       <header className="bg-red-strong border-b-2 border-red-dark py-6">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <img 
-            src="/logo-frango-dourado.png" 
-            alt={store.name}
-            className="h-20 w-auto mx-auto mb-4 object-contain"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none'
-            }}
-          />
-          <h1 className="text-4xl font-bold text-white mb-2">{}</h1>
-          <p className="text-2xl font-semibold text-yellow-gold">NOSSO MAGNIFICO CARDÁPIO</p>
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="flex justify-between items-center mb-4">
+            <button
+              onClick={() => router.push(`/loja/${store.slug}/pedidos`)}
+              className="bg-yellow-gold text-black-dark px-4 py-2 rounded-lg font-semibold hover:bg-opacity-90 transition text-sm"
+            >
+              Ver Histórico de Pedidos
+            </button>
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="bg-yellow-gold text-black-dark px-4 py-2 rounded-lg font-semibold hover:bg-opacity-90 transition text-sm relative"
+            >
+              🛒 Carrinho
+              {cartItems.length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-strong text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                  {cartItems.reduce((sum, item) => sum + item.quantity, 0)}
+                </span>
+              )}
+            </button>
+          </div>
+          <div className="text-center">
+            <img 
+              src="/logo-frango-dourado.png" 
+              alt={store.name}
+              className="h-20 w-auto mx-auto mb-4 object-contain"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none'
+              }}
+            />
+            <h1 className="text-4xl font-bold text-white mb-2">{}</h1>
+            <p className="text-2xl font-semibold text-yellow-gold">NOSSO MAGNIFICO CARDÁPIO</p>
+          </div>
         </div>
       </header>
 
@@ -366,9 +498,22 @@ export default function LojaPage() {
                     {product.description && (
                       <p className="text-black-dark mb-2 text-sm">{product.description}</p>
                     )}
-                    <p className="text-lg font-bold text-red-strong">
-                      Preço: MT {product.price.toFixed(0)}
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-lg font-bold text-red-strong">
+                        Preço: MT {product.price.toFixed(0)}
+                      </p>
+                      {product.isAvailable && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            addToCart(product)
+                          }}
+                          className="bg-red-strong text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-red-dark transition text-xs"
+                        >
+                          + Adicionar
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -566,19 +711,6 @@ export default function LojaPage() {
                   </a>
                 )}
               </div>
-              {store.appUrl && (
-                <a
-                  href={store.appUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-1.5 bg-yellow-gold text-black-dark px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-semibold hover:bg-opacity-90 transition-colors"
-                >
-                  <svg className="w-4 h-4 md:w-5 md:h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.96-3.24-1.44-2.24-1.01-3.89-1.75-4.99-3.01-1.09-1.25-1.15-2.36-.62-3.72.54-1.36 1.51-2.25 2.76-2.7.63-.23 1.25-.35 1.87-.35.66 0 1.31.14 1.94.48.26.14.51.31.75.5.24.19.46.4.66.65.2.25.37.52.52.8.15.28.28.58.39.89.11.31.19.64.25.98.06.34.09.69.09 1.04 0 .35-.03.7-.09 1.04-.06.34-.14.67-.25.98-.11.31-.24.61-.39.89-.15.28-.32.55-.52.8-.2.25-.42.46-.66.65-.24.19-.49.36-.75.5-.63.34-1.28.48-1.94.48-.62 0-1.24-.12-1.87-.35-1.25-.45-2.22-1.34-2.76-2.7-.53-1.36-.47-2.47.62-3.72 1.1-1.26 2.75-2 4.99-3.01 1.16-.48 2.15-.94 3.24-1.44 1.03-.48 2.1-.55 3.08.4.98.95 1.86 2.02 2.66 3.2.8 1.18 1.48 2.36 2.06 3.54.58 1.18 1.06 2.36 1.44 3.54.38 1.18.66 2.36.84 3.54.18 1.18.26 2.36.26 3.54 0 1.18-.08 2.36-.26 3.54-.18 1.18-.46 2.36-.84 3.54-.38 1.18-.86 2.36-1.44 3.54-.58 1.18-1.26 2.36-2.06 3.54-.8 1.18-1.68 2.25-2.66 3.2z"/>
-                  </svg>
-                  <span>Baixar App</span>
-                </a>
-              )}
             </div>
           </div>
 
@@ -590,6 +722,58 @@ export default function LojaPage() {
           </div>
         </div>
       </footer>
+
+      {/* Componentes de Carrinho e Checkout */}
+      <Cart
+        items={cartItems}
+        onUpdateItem={updateCartItem}
+        onRemoveItem={removeCartItem}
+        onCheckout={() => {
+          setIsCartOpen(false)
+          setIsCheckoutOpen(true)
+        }}
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+      />
+
+      <CheckoutModal
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        items={cartItems}
+        storeSlug={store.slug}
+        onContinue={handleCheckoutContinue}
+      />
+
+      {checkoutData && (
+        <PaymentModal
+          isOpen={isPaymentOpen}
+          onClose={() => {
+            setIsPaymentOpen(false)
+            setCheckoutData(null)
+          }}
+          items={cartItems}
+          total={cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)}
+          customerName={checkoutData.customerName}
+          customerPhone={checkoutData.customerPhone}
+          tableId={checkoutData.tableId}
+          mpesaName={store.mpesaName}
+          mpesaPhone={store.mpesaPhone}
+          emolaName={store.emolaName}
+          emolaPhone={store.emolaPhone}
+          onPaymentComplete={handlePaymentComplete}
+        />
+      )}
+
+      {/* Botão de Chamar Atendente */}
+      {store && (
+        <CallAttendantButton
+          storeId={store.id}
+          tableId={checkoutData?.tableId || 1}
+          customerName={checkoutData?.customerName}
+          customerPhone={checkoutData?.customerPhone}
+          storeSlug={store.slug}
+        />
+      )}
 
       <style jsx>{`
         .scrollbar-hide::-webkit-scrollbar {

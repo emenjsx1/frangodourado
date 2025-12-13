@@ -39,3 +39,4 @@ Se aparecer a versão, está instalado corretamente!
 O projeto foi modificado para funcionar sem Composer. Veja o arquivo `SEM_COMPOSER.md` para instruções.
 
 
+

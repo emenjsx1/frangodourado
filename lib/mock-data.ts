@@ -20,6 +20,10 @@ export interface Store {
   instagramUrl?: string
   whatsappUrl?: string
   appUrl?: string
+  mpesaName?: string
+  mpesaPhone?: string
+  emolaName?: string
+  emolaPhone?: string
 }
 
 export interface Category {

@@ -89,3 +89,4 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - As políticas RLS estão configuradas para permitir leitura pública e escrita apenas para usuários autenticados
 - O script de migração é idempotente (pode ser executado múltiplas vezes sem duplicar dados)
 
+

@@ -33,3 +33,4 @@ Após criar o arquivo e reiniciar o servidor, você verá no console:
 - Se o Supabase estiver configurado: as rotas usarão o banco de dados
 - Se não estiver: aparecerá um aviso e o sistema usará mock data como fallback
 
+

@@ -1,15 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { mockData, initializeMockData } from '@/lib/mock-data'
+import { 
+  getReviewsByProductId, 
+  createReview, 
+  getAverageRating, 
+  getReviewCount 
+} from '@/lib/db-supabase'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await initializeMockData()
     const { id } = await params
     const productId = parseInt(id)
 
+    // Tentar buscar do Supabase primeiro
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    if (supabaseUrl) {
+      try {
+        const reviews = await getReviewsByProductId(productId)
+        const averageRating = await getAverageRating(productId)
+        const reviewCount = await getReviewCount(productId)
+
+        return NextResponse.json({
+          reviews,
+          averageRating,
+          reviewCount,
+        })
+      } catch (supabaseError) {
+        console.warn('Supabase error, falling back to mock data:', supabaseError)
+      }
+    }
+
+    // Fallback para mock data
+    await initializeMockData()
     const productReviews = mockData.reviews.findByProductId(productId)
     const averageRating = mockData.reviews.getAverageRating(productId)
     const reviewCount = mockData.reviews.getCount(productId)
@@ -33,7 +58,6 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await initializeMockData()
     const { id } = await params
     const productId = parseInt(id)
 
@@ -53,6 +77,27 @@ export async function POST(
       )
     }
 
+    // Tentar salvar no Supabase primeiro
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    if (supabaseUrl) {
+      try {
+        const review = await createReview({
+          productId,
+          userName,
+          rating: parseInt(rating),
+          comment,
+        })
+
+        if (review) {
+          return NextResponse.json(review, { status: 201 })
+        }
+      } catch (supabaseError) {
+        console.warn('Supabase error, falling back to mock data:', supabaseError)
+      }
+    }
+
+    // Fallback para mock data
+    await initializeMockData()
     const review = mockData.reviews.create({
       productId,
       userName,
@@ -69,4 +114,5 @@ export async function POST(
     )
   }
 }
+
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { getStoreByUserId, getCategoriesByStoreId, getProductsByStoreId, getCategoryById } from '@/lib/db-supabase'
+import { getStoreByUserId, getCategoriesByStoreId, getProductsByStoreId, getCategoryById, updateStore } from '@/lib/db-supabase'
 import { mockData, initializeMockData } from '@/lib/mock-data'
 
 export async function GET(request: NextRequest) {
@@ -122,7 +122,25 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const { id, name, slug, description } = await request.json()
+    // Ler o body uma única vez
+    const body = await request.json()
+    const { 
+      id, 
+      name, 
+      slug, 
+      description, 
+      facebookUrl, 
+      instagramUrl, 
+      whatsappUrl, 
+      appUrl, 
+      address, 
+      phone, 
+      email, 
+      mpesaName,
+      mpesaPhone, 
+      emolaName,
+      emolaPhone 
+    } = body
 
     // Verificar se a loja pertence ao usuário
     const store = mockData.stores.findByUserId(parseInt(session.user.id))
@@ -146,7 +164,43 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    const { facebookUrl, instagramUrl, whatsappUrl, appUrl, address, phone, email } = await request.json()
+    // Tentar atualizar no Supabase primeiro
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    if (supabaseUrl) {
+      try {
+        console.log('Tentando atualizar no Supabase:', { id, mpesaName, mpesaPhone, emolaName, emolaPhone })
+        const updatedStore = await updateStore(id, {
+          name,
+          slug,
+          description: description || undefined,
+          facebookUrl: facebookUrl || undefined,
+          instagramUrl: instagramUrl || undefined,
+          whatsappUrl: whatsappUrl || undefined,
+          appUrl: appUrl || undefined,
+          address: address || undefined,
+          phone: phone || undefined,
+          email: email || undefined,
+          mpesaName: mpesaName || undefined,
+          mpesaPhone: mpesaPhone || undefined,
+          emolaName: emolaName || undefined,
+          emolaPhone: emolaPhone || undefined,
+        })
+        if (updatedStore) {
+          console.log('Loja atualizada com sucesso no Supabase')
+          return NextResponse.json(updatedStore)
+        } else {
+          console.warn('updateStore retornou null, caindo para mock data')
+        }
+      } catch (supabaseError: any) {
+        console.error('Erro ao atualizar no Supabase:', supabaseError)
+        console.error('Detalhes do erro:', supabaseError?.message, supabaseError?.code, supabaseError?.details)
+        // Não fazer fallback silencioso - retornar erro
+        return NextResponse.json(
+          { error: `Erro ao atualizar loja: ${supabaseError?.message || 'Erro desconhecido'}` },
+          { status: 500 }
+        )
+      }
+    }
 
     const updatedStore = mockData.stores.update(id, {
       name,
@@ -159,6 +213,10 @@ export async function PUT(request: NextRequest) {
       address: address || undefined,
       phone: phone || undefined,
       email: email || undefined,
+      mpesaName: mpesaName || undefined,
+      mpesaPhone: mpesaPhone || undefined,
+      emolaName: emolaName || undefined,
+      emolaPhone: emolaPhone || undefined,
     })
 
     if (!updatedStore) {

@@ -68,3 +68,4 @@ Você pode ignorá-los com segurança. Eles não afetam o funcionamento da aplic
 - [ ] Teste de login funcionando
 - [ ] Teste do cardápio público funcionando
 
+

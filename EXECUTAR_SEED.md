@@ -53,3 +53,4 @@ npm run db:seed
 - Cardápio Pizza Italiana: http://localhost:3000/loja/pizza-italiana
 
 
+
