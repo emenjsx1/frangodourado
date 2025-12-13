@@ -25,7 +25,7 @@ export default function AttendantCallsSection({ storeId }: { storeId: number }) 
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const previousCallsRef = useRef<number[]>([])
-  const playNotificationSound = useNotificationSound()
+  const playNotificationSound = useNotificationSound('call') // Som de campainha para chamadas
 
   const fetchCalls = async () => {
     try {
@@ -122,13 +122,13 @@ export default function AttendantCallsSection({ storeId }: { storeId: number }) 
           <button
             onClick={() => {
               playNotificationSound()
-              setMessage('Som de teste tocado!')
+              setMessage('Som de campainha tocado!')
               setTimeout(() => setMessage(''), 2000)
             }}
             className="px-3 py-1.5 bg-yellow-gold text-black-dark rounded-lg text-xs font-semibold hover:bg-opacity-90 transition"
-            title="Testar som de notificação"
+            title="Testar som de campainha (chamadas)"
           >
-            🔊 Testar Som
+            🔔 Testar Som
           </button>
           <div className="text-sm text-gray-600">
             {filteredCalls.length} chamada(s)

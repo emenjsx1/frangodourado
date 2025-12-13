@@ -48,7 +48,7 @@ export default function OrdersSection({ storeId }: { storeId: number }) {
   const [receipts, setReceipts] = useState<Record<number, PaymentReceipt | null>>({})
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const previousOrdersRef = useRef<number[]>([])
-  const playNotificationSound = useNotificationSound()
+  const playNotificationSound = useNotificationSound('order') // Som de caixa registradora para pedidos
   
   // Estados para filtro de data
   const [dateFilter, setDateFilter] = useState<string>('all') // 'all', 'today', 'yesterday', '7days', '30days', 'custom'
@@ -357,13 +357,13 @@ export default function OrdersSection({ storeId }: { storeId: number }) {
           <button
             onClick={() => {
               playNotificationSound()
-              setMessage('Som de teste tocado!')
+              setMessage('Som de caixa registradora tocado!')
               setTimeout(() => setMessage(''), 2000)
             }}
             className="px-3 py-1.5 bg-yellow-gold text-black-dark rounded-lg text-xs font-semibold hover:bg-opacity-90 transition"
-            title="Testar som de notificação"
+            title="Testar som de caixa registradora (pedidos)"
           >
-            🔊 Testar Som
+            💰 Testar Som
           </button>
           <div className="text-sm text-gray-600">
             {filteredOrders.length} de {orders.length} pedido(s)

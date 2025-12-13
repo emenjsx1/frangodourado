@@ -1,10 +1,12 @@
 import { useRef, useCallback, useEffect, useState } from 'react'
 
+type SoundType = 'order' | 'call'
+
 /**
  * Hook para tocar som de notificação usando Web Audio API
- * Cria um "barulho" programaticamente sem precisar de arquivo de áudio
+ * Cria sons diferentes para pedidos (caixa registradora) e chamadas (campainha)
  */
-export function useNotificationSound() {
+export function useNotificationSound(soundType: SoundType = 'order') {
   const audioContextRef = useRef<AudioContext | null>(null)
   const [isEnabled, setIsEnabled] = useState(false)
 
@@ -46,6 +48,104 @@ export function useNotificationSound() {
     }
   }, [])
 
+  // Som de campainha para chamadas de atendente
+  const playBellSound = useCallback((audioContext: AudioContext) => {
+    try {
+      // Primeira campainha (mais aguda)
+      const oscillator1 = audioContext.createOscillator()
+      const gainNode1 = audioContext.createGain()
+
+      oscillator1.connect(gainNode1)
+      gainNode1.connect(audioContext.destination)
+
+      oscillator1.type = 'sine' // Onda senoidal para som mais suave de campainha
+      oscillator1.frequency.setValueAtTime(800, audioContext.currentTime)
+      oscillator1.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.2)
+
+      gainNode1.gain.setValueAtTime(0, audioContext.currentTime)
+      gainNode1.gain.linearRampToValueAtTime(0.4, audioContext.currentTime + 0.05)
+      gainNode1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2)
+
+      oscillator1.start(audioContext.currentTime)
+      oscillator1.stop(audioContext.currentTime + 0.2)
+
+      // Segunda campainha (mais grave, um pouco depois)
+      setTimeout(() => {
+        try {
+          const oscillator2 = audioContext.createOscillator()
+          const gainNode2 = audioContext.createGain()
+
+          oscillator2.connect(gainNode2)
+          gainNode2.connect(audioContext.destination)
+
+          oscillator2.type = 'sine'
+          oscillator2.frequency.setValueAtTime(600, audioContext.currentTime)
+          oscillator2.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.2)
+
+          gainNode2.gain.setValueAtTime(0, audioContext.currentTime)
+          gainNode2.gain.linearRampToValueAtTime(0.4, audioContext.currentTime + 0.05)
+          gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2)
+
+          oscillator2.start(audioContext.currentTime)
+          oscillator2.stop(audioContext.currentTime + 0.2)
+        } catch (error) {
+          console.warn('Erro ao tocar segunda campainha:', error)
+        }
+      }, 100)
+    } catch (error) {
+      console.warn('Erro ao tocar som de campainha:', error)
+    }
+  }, [])
+
+  // Som de caixa registradora para pedidos
+  const playCashRegisterSound = useCallback((audioContext: AudioContext) => {
+    try {
+      // Primeiro "ding" (som de caixa registradora)
+      const oscillator1 = audioContext.createOscillator()
+      const gainNode1 = audioContext.createGain()
+
+      oscillator1.connect(gainNode1)
+      gainNode1.connect(audioContext.destination)
+
+      oscillator1.type = 'square' // Onda quadrada para som mais metálico
+      oscillator1.frequency.setValueAtTime(1200, audioContext.currentTime)
+      oscillator1.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.1)
+
+      gainNode1.gain.setValueAtTime(0, audioContext.currentTime)
+      gainNode1.gain.linearRampToValueAtTime(0.5, audioContext.currentTime + 0.02)
+      gainNode1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1)
+
+      oscillator1.start(audioContext.currentTime)
+      oscillator1.stop(audioContext.currentTime + 0.1)
+
+      // Segundo "ding" (mais agudo, característico de caixa registradora)
+      setTimeout(() => {
+        try {
+          const oscillator2 = audioContext.createOscillator()
+          const gainNode2 = audioContext.createGain()
+
+          oscillator2.connect(gainNode2)
+          gainNode2.connect(audioContext.destination)
+
+          oscillator2.type = 'square'
+          oscillator2.frequency.setValueAtTime(1500, audioContext.currentTime)
+          oscillator2.frequency.exponentialRampToValueAtTime(1000, audioContext.currentTime + 0.08)
+
+          gainNode2.gain.setValueAtTime(0, audioContext.currentTime)
+          gainNode2.gain.linearRampToValueAtTime(0.5, audioContext.currentTime + 0.02)
+          gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.08)
+
+          oscillator2.start(audioContext.currentTime)
+          oscillator2.stop(audioContext.currentTime + 0.08)
+        } catch (error) {
+          console.warn('Erro ao tocar segundo ding:', error)
+        }
+      }, 80)
+    } catch (error) {
+      console.warn('Erro ao tocar som de caixa registradora:', error)
+    }
+  }, [])
+
   const playSound = useCallback(() => {
     try {
       // Verificar se o contexto está disponível
@@ -65,57 +165,16 @@ export function useNotificationSound() {
         })
       }
 
-      // Criar um oscilador para gerar o som
-      const oscillator = audioContext.createOscillator()
-      const gainNode = audioContext.createGain()
-
-      // Conectar os nós
-      oscillator.connect(gainNode)
-      gainNode.connect(audioContext.destination)
-
-      // Configurar o tipo de onda (square = som mais "barulhento")
-      oscillator.type = 'square'
-      
-      // Frequência inicial (mais aguda) - som mais alto e chamativo
-      oscillator.frequency.setValueAtTime(1000, audioContext.currentTime)
-      
-      // Frequência final (mais grave) - cria um "barulho" descendente
-      oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.15)
-
-      // Configurar volume (gain) - mais alto para ser mais perceptível
-      gainNode.gain.setValueAtTime(0.5, audioContext.currentTime)
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.25)
-
-      // Tocar o som
-      oscillator.start(audioContext.currentTime)
-      oscillator.stop(audioContext.currentTime + 0.25)
-
-      // Tocar um segundo "beep" para fazer um "barulho" duplo mais chamativo
-      setTimeout(() => {
-        try {
-          const oscillator2 = audioContext.createOscillator()
-          const gainNode2 = audioContext.createGain()
-
-          oscillator2.connect(gainNode2)
-          gainNode2.connect(audioContext.destination)
-
-          oscillator2.type = 'square'
-          oscillator2.frequency.setValueAtTime(800, audioContext.currentTime)
-          oscillator2.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + 0.15)
-
-          gainNode2.gain.setValueAtTime(0.5, audioContext.currentTime)
-          gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.25)
-
-          oscillator2.start(audioContext.currentTime)
-          oscillator2.stop(audioContext.currentTime + 0.25)
-        } catch (error) {
-          console.warn('Erro ao tocar segundo beep:', error)
-        }
-      }, 150)
+      // Tocar som baseado no tipo
+      if (soundType === 'call') {
+        playBellSound(audioContext)
+      } else {
+        playCashRegisterSound(audioContext)
+      }
     } catch (error) {
       console.warn('⚠️ Erro ao tocar som de notificação:', error)
     }
-  }, [])
+  }, [soundType, playBellSound, playCashRegisterSound])
 
   return playSound
 }
