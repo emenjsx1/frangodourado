@@ -90,6 +90,7 @@ export default function OrdersSection({ storeId }: { storeId: number }) {
     const newOrderIds = currentOrderIds.filter(id => !previousOrdersRef.current.includes(id))
     
     if (newOrderIds.length > 0 && previousOrdersRef.current.length > 0) {
+      console.log(`🔔 Novo pedido detectado! IDs: ${newOrderIds.join(', ')}`)
       playNotificationSound()
     }
     
@@ -352,8 +353,21 @@ export default function OrdersSection({ storeId }: { storeId: number }) {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl sm:text-2xl font-bold text-black-dark">Pedidos</h2>
-        <div className="text-sm text-gray-600">
-          {filteredOrders.length} de {orders.length} pedido(s)
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              playNotificationSound()
+              setMessage('Som de teste tocado!')
+              setTimeout(() => setMessage(''), 2000)
+            }}
+            className="px-3 py-1.5 bg-yellow-gold text-black-dark rounded-lg text-xs font-semibold hover:bg-opacity-90 transition"
+            title="Testar som de notificação"
+          >
+            🔊 Testar Som
+          </button>
+          <div className="text-sm text-gray-600">
+            {filteredOrders.length} de {orders.length} pedido(s)
+          </div>
         </div>
       </div>
 

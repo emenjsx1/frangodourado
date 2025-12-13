@@ -54,6 +54,7 @@ export default function AttendantCallsSection({ storeId }: { storeId: number }) 
     const newCallIds = currentCallIds.filter(id => !previousCallsRef.current.includes(id))
     
     if (newCallIds.length > 0 && previousCallsRef.current.length > 0) {
+      console.log(`🔔 Nova chamada de atendente detectada! IDs: ${newCallIds.join(', ')}`)
       playNotificationSound()
     }
     
@@ -117,8 +118,21 @@ export default function AttendantCallsSection({ storeId }: { storeId: number }) 
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl sm:text-2xl font-bold text-black-dark">Chamadas de Atendente</h2>
-        <div className="text-sm text-gray-600">
-          {filteredCalls.length} chamada(s)
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              playNotificationSound()
+              setMessage('Som de teste tocado!')
+              setTimeout(() => setMessage(''), 2000)
+            }}
+            className="px-3 py-1.5 bg-yellow-gold text-black-dark rounded-lg text-xs font-semibold hover:bg-opacity-90 transition"
+            title="Testar som de notificação"
+          >
+            🔊 Testar Som
+          </button>
+          <div className="text-sm text-gray-600">
+            {filteredCalls.length} chamada(s)
+          </div>
         </div>
       </div>
 
