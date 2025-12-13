@@ -229,36 +229,6 @@ export function useNotificationSound(soundType: SoundType = 'order') {
     }
   }, [useFile, playGeneratedSound])
 
-  const playGeneratedSound = useCallback(() => {
-    try {
-      // Verificar se o contexto está disponível
-      if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
-      }
-
-      const audioContext = audioContextRef.current
-
-      // Se o contexto estiver suspenso, tentar retomar
-      if (audioContext.state === 'suspended') {
-        audioContext.resume().then(() => {
-          console.log('🔊 Contexto de áudio retomado')
-        }).catch(err => {
-          console.warn('⚠️ Não foi possível retomar o contexto de áudio:', err)
-          return
-        })
-      }
-
-      // Tocar som baseado no tipo
-      if (soundType === 'call') {
-        playBellSound(audioContext)
-      } else {
-        playCashRegisterSound(audioContext)
-      }
-    } catch (error) {
-      console.warn('⚠️ Erro ao tocar som gerado:', error)
-    }
-  }, [soundType, playBellSound, playCashRegisterSound])
-
   return playSound
 }
 
