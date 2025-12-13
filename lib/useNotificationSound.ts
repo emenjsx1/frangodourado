@@ -2,13 +2,21 @@ import { useRef, useCallback, useEffect, useState } from 'react'
 
 type SoundType = 'order' | 'call'
 
+// Caminhos dos arquivos de áudio (se existirem)
+const SOUND_PATHS = {
+  order: '/sounds/cash-register.mp3', // Som de caixa registradora para pedidos
+  call: '/sounds/bell.mp3', // Som de campainha para chamadas
+}
+
 /**
  * Hook para tocar som de notificação usando Web Audio API
  * Cria sons diferentes para pedidos (caixa registradora) e chamadas (campainha)
  */
 export function useNotificationSound(soundType: SoundType = 'order') {
   const audioContextRef = useRef<AudioContext | null>(null)
+  const audioElementRef = useRef<HTMLAudioElement | null>(null)
   const [isEnabled, setIsEnabled] = useState(false)
+  const [useFile, setUseFile] = useState(false)
 
   // Ativar o contexto de áudio na primeira interação do usuário
   useEffect(() => {
@@ -146,7 +154,31 @@ export function useNotificationSound(soundType: SoundType = 'order') {
     }
   }, [])
 
-  const playSound = useCallback(() => {
+  // Tentar carregar arquivo de áudio primeiro, se existir
+  useEffect(() => {
+    const audioPath = SOUND_PATHS[soundType]
+    const audio = new Audio(audioPath)
+    
+    audio.addEventListener('canplaythrough', () => {
+      setUseFile(true)
+      audioElementRef.current = audio
+      console.log(`✅ Arquivo de áudio carregado: ${audioPath}`)
+    })
+    
+    audio.addEventListener('error', () => {
+      setUseFile(false)
+      console.log(`ℹ️ Arquivo de áudio não encontrado (${audioPath}), usando som gerado`)
+    })
+    
+    audio.load()
+    
+    return () => {
+      audio.removeEventListener('canplaythrough', () => {})
+      audio.removeEventListener('error', () => {})
+    }
+  }, [soundType])
+
+  const playGeneratedSound = useCallback(() => {
     try {
       // Verificar se o contexto está disponível
       if (!audioContextRef.current) {
@@ -172,7 +204,58 @@ export function useNotificationSound(soundType: SoundType = 'order') {
         playCashRegisterSound(audioContext)
       }
     } catch (error) {
+      console.warn('⚠️ Erro ao tocar som gerado:', error)
+    }
+  }, [soundType, playBellSound, playCashRegisterSound])
+
+  const playSound = useCallback(() => {
+    try {
+      // Tentar usar arquivo de áudio primeiro
+      if (useFile && audioElementRef.current) {
+        const audio = audioElementRef.current.cloneNode() as HTMLAudioElement
+        audio.volume = 0.7
+        audio.play().catch(err => {
+          console.warn('⚠️ Erro ao tocar arquivo de áudio, usando som gerado:', err)
+          // Fallback para som gerado
+          playGeneratedSound()
+        })
+        return
+      }
+
+      // Usar som gerado programaticamente como fallback
+      playGeneratedSound()
+    } catch (error) {
       console.warn('⚠️ Erro ao tocar som de notificação:', error)
+    }
+  }, [useFile, playGeneratedSound])
+
+  const playGeneratedSound = useCallback(() => {
+    try {
+      // Verificar se o contexto está disponível
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
+      }
+
+      const audioContext = audioContextRef.current
+
+      // Se o contexto estiver suspenso, tentar retomar
+      if (audioContext.state === 'suspended') {
+        audioContext.resume().then(() => {
+          console.log('🔊 Contexto de áudio retomado')
+        }).catch(err => {
+          console.warn('⚠️ Não foi possível retomar o contexto de áudio:', err)
+          return
+        })
+      }
+
+      // Tocar som baseado no tipo
+      if (soundType === 'call') {
+        playBellSound(audioContext)
+      } else {
+        playCashRegisterSound(audioContext)
+      }
+    } catch (error) {
+      console.warn('⚠️ Erro ao tocar som gerado:', error)
     }
   }, [soundType, playBellSound, playCashRegisterSound])
 
