@@ -284,7 +284,7 @@ export default function PaymentModal({
                     accept="image/jpeg,image/jpg,image/png,application/pdf"
                     onChange={handleFileChange}
                     className="w-full px-4 py-2 border-2 border-red-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-red-strong text-sm"
-                    required={selectedMethod !== 'cash'}
+                    required={true}
                   />
                   {receiptFile && (
                     <p className="text-sm text-green-600 mt-2">
