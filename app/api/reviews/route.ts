@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { mockData, initializeMockData } from '@/lib/mock-data'
 import { getStoreByUserId, getReviewsByStoreId, getProductsByStoreId } from '@/lib/db-supabase'
-import { supabaseAdmin } from '@/lib/supabase'
 
 // GET - Buscar todas as avaliações da loja do admin
 export async function GET(request: NextRequest) {
@@ -104,8 +103,18 @@ export async function POST(request: NextRequest) {
 
     // Tentar salvar no Supabase primeiro
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    if (supabaseUrl && supabaseAdmin) {
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    
+    if (supabaseUrl && supabaseServiceKey) {
       try {
+        const { createClient } = await import('@supabase/supabase-js')
+        const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        })
+
         const { data, error } = await supabaseAdmin
           .from('reviews')
           .insert({
