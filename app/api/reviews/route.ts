@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { mockData, initializeMockData } from '@/lib/mock-data'
 import { getStoreByUserId, getReviewsByStoreId, getProductsByStoreId } from '@/lib/db-supabase'
+import { supabaseAdmin } from '@/lib/supabase'
 
 // GET - Buscar todas as avaliações da loja do admin
 export async function GET(request: NextRequest) {
