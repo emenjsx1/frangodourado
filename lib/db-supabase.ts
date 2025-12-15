@@ -3,6 +3,9 @@ import { supabaseAdmin } from './supabase'
 // Verificar se Supabase está configurado
 if (!supabaseAdmin) {
   console.warn('⚠️ Supabase não está configurado. Certifique-se de criar o arquivo .env.local com as credenciais.')
+  console.warn('⚠️ Variáveis necessárias: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY')
+} else {
+  console.log('✅ Supabase Admin client inicializado')
 }
 
 // Interfaces
@@ -128,7 +131,10 @@ export async function getStoreBySlug(slug: string) {
 }
 
 export async function getCategoriesByStoreId(storeId: number) {
-  if (!supabaseAdmin) return []
+  if (!supabaseAdmin) {
+    console.warn('⚠️ getCategoriesByStoreId: Supabase não configurado')
+    return []
+  }
   
   const { data, error } = await supabaseAdmin
     .from('categories')
@@ -136,7 +142,15 @@ export async function getCategoriesByStoreId(storeId: number) {
     .eq('store_id', storeId)
     .order('order_position', { ascending: true })
 
-  if (error || !data) return []
+  if (error) {
+    console.error('❌ Erro ao buscar categorias no Supabase:', error)
+    return []
+  }
+  
+  if (!data) {
+    console.warn('⚠️ getCategoriesByStoreId: Nenhuma categoria encontrada para storeId:', storeId)
+    return []
+  }
   return data.map(cat => ({
     id: cat.id,
     storeId: cat.store_id,
@@ -147,7 +161,10 @@ export async function getCategoriesByStoreId(storeId: number) {
 }
 
 export async function getProductsByStoreId(storeId: number, categoryId?: number) {
-  if (!supabaseAdmin) return []
+  if (!supabaseAdmin) {
+    console.warn('⚠️ getProductsByStoreId: Supabase não configurado')
+    return []
+  }
   
   let query = supabaseAdmin
     .from('products')
@@ -160,7 +177,15 @@ export async function getProductsByStoreId(storeId: number, categoryId?: number)
 
   const { data, error } = await query
 
-  if (error || !data) return []
+  if (error) {
+    console.error('❌ Erro ao buscar produtos no Supabase:', error)
+    return []
+  }
+  
+  if (!data) {
+    console.warn('⚠️ getProductsByStoreId: Nenhum produto encontrado para storeId:', storeId)
+    return []
+  }
   return data.map(prod => ({
     id: prod.id,
     categoryId: prod.category_id,
@@ -175,7 +200,10 @@ export async function getProductsByStoreId(storeId: number, categoryId?: number)
 }
 
 export async function getStoreByUserId(userId: number) {
-  if (!supabaseAdmin) return null
+  if (!supabaseAdmin) {
+    console.warn('⚠️ getStoreByUserId: Supabase não configurado')
+    return null
+  }
   
   const { data, error } = await supabaseAdmin
     .from('stores')
@@ -183,7 +211,15 @@ export async function getStoreByUserId(userId: number) {
     .eq('user_id', userId)
     .single()
 
-  if (error || !data) return null
+  if (error) {
+    console.error('❌ Erro ao buscar loja no Supabase:', error)
+    return null
+  }
+  
+  if (!data) {
+    console.warn('⚠️ getStoreByUserId: Nenhuma loja encontrada para userId:', userId)
+    return null
+  }
   return {
     id: data.id,
     userId: data.user_id,
