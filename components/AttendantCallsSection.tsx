@@ -54,7 +54,7 @@ export default function AttendantCallsSection({ storeId }: { storeId: number }) 
     const newCallIds = currentCallIds.filter(id => !previousCallsRef.current.includes(id))
     
     if (newCallIds.length > 0 && previousCallsRef.current.length > 0) {
-      console.log(`🔔 Nova chamada de atendente detectada! IDs: ${newCallIds.join(', ')}`)
+      // Nova chamada de atendente detectada
       playNotificationSound()
     }
     

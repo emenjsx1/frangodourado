@@ -1,8 +1,8 @@
 # 🚀 Guia de Deploy no Vercel
 
-## ⚠️ Erro 500 no `/api/auth/error`
+## ⚠️ Erro 500 no `/api/auth/session`
 
-Este erro ocorre porque as variáveis de ambiente não estão configuradas no Vercel.
+Este erro ocorre porque as variáveis de ambiente **não estão configuradas no Vercel**.
 
 ## 📋 Variáveis de Ambiente Obrigatórias
 
@@ -10,22 +10,44 @@ Configure as seguintes variáveis de ambiente no painel do Vercel:
 
 ### 1. Acesse o Painel do Vercel
 1. Vá para https://vercel.com
-2. Selecione seu projeto `frangodourado`
-3. Vá em **Settings** → **Environment Variables**
+2. Faça login na sua conta
+3. Selecione seu projeto **frangodouradoo** (ou o nome do seu projeto)
+4. Vá em **Settings** → **Environment Variables**
 
 ### 2. Adicione as Variáveis
 
-#### NextAuth (Obrigatório)
+#### NextAuth (Obrigatório - DEVE ser configurado!)
+
+**Variável 1: NEXTAUTH_URL**
 ```
-NEXTAUTH_URL=https://frangodourado.vercel.app
-NEXTAUTH_SECRET=seu-secret-aqui-gere-uma-chave-aleatoria
+Nome: NEXTAUTH_URL
+Valor: https://frangodouradoo.vercel.app
+Ambientes: Production, Preview, Development
+```
+
+**Variável 2: NEXTAUTH_SECRET**
+```
+Nome: NEXTAUTH_SECRET
+Valor: [GERE UMA CHAVE ALEATÓRIA - veja instruções abaixo]
+Ambientes: Production, Preview, Development
 ```
 
 **Para gerar o NEXTAUTH_SECRET:**
+
+**Opção 1 - Online (Mais Fácil):**
+1. Acesse: https://generate-secret.vercel.app/32
+2. Copie a chave gerada
+3. Cole no campo "Valor" da variável
+
+**Opção 2 - PowerShell (Windows):**
+```powershell
+[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
+```
+
+**Opção 3 - Terminal (Linux/Mac):**
 ```bash
 openssl rand -base64 32
 ```
-Ou use este gerador online: https://generate-secret.vercel.app/32
 
 #### Supabase (Obrigatório se usar banco de dados)
 ```
@@ -48,10 +70,17 @@ Após adicionar as variáveis:
 ## 🔍 Verificando se Funcionou
 
 Após o redeploy, acesse:
-- https://frangodourado.vercel.app/login
-- https://frangodourado.vercel.app/loja/frango-dourado
+- https://frangodouradoo.vercel.app/login
+- https://frangodouradoo.vercel.app
 
-O erro 500 deve desaparecer.
+O erro 500 deve desaparecer! ✅
+
+## ⚠️ IMPORTANTE
+
+1. **NEXTAUTH_URL**: Deve ser exatamente a URL do seu site no Vercel (com `https://`)
+2. **NEXTAUTH_SECRET**: Deve ser uma string aleatória e segura. **NÃO compartilhe esta chave publicamente!**
+3. **Redeploy obrigatório**: Após adicionar variáveis, você **DEVE** fazer um redeploy para que as mudanças tenham efeito
+4. **Ambientes**: Configure para Production, Preview e Development para funcionar em todos os ambientes
 
 ## ⚠️ Sobre os Outros Erros no Console
 
@@ -67,5 +96,7 @@ Você pode ignorá-los com segurança. Eles não afetam o funcionamento da aplic
 - [ ] Redeploy realizado após adicionar variáveis
 - [ ] Teste de login funcionando
 - [ ] Teste do cardápio público funcionando
+
+
 
 

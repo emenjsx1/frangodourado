@@ -90,7 +90,7 @@ export default function OrdersSection({ storeId }: { storeId: number }) {
     const newOrderIds = currentOrderIds.filter(id => !previousOrdersRef.current.includes(id))
     
     if (newOrderIds.length > 0 && previousOrdersRef.current.length > 0) {
-      console.log(`🔔 Novo pedido detectado! IDs: ${newOrderIds.join(', ')}`)
+      // Novo pedido detectado
       playNotificationSound()
     }
     

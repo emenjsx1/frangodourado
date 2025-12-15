@@ -36,3 +36,5 @@ CREATE POLICY "Authenticated users can delete receipts" ON storage.objects
 -- FIM
 -- ============================================
 
+
+

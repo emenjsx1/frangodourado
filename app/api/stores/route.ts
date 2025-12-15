@@ -168,7 +168,7 @@ export async function PUT(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     if (supabaseUrl) {
       try {
-        console.log('Tentando atualizar no Supabase:', { id, mpesaName, mpesaPhone, emolaName, emolaPhone })
+        // Atualizando loja no Supabase
         const updatedStore = await updateStore(id, {
           name,
           slug,
@@ -186,7 +186,7 @@ export async function PUT(request: NextRequest) {
           emolaPhone: emolaPhone || undefined,
         })
         if (updatedStore) {
-          console.log('Loja atualizada com sucesso no Supabase')
+          // Loja atualizada com sucesso
           return NextResponse.json(updatedStore)
         } else {
           console.warn('updateStore retornou null, caindo para mock data')

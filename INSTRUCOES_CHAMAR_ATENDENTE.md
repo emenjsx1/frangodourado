@@ -65,3 +65,5 @@ Ou copie e cole o conteúdo do arquivo `supabase/CRIAR_TABELA_ATENDENTE.sql`
 - ✅ Há notificação sonora para novas chamadas
 - ✅ As chamadas são filtradas por status
 
+
+

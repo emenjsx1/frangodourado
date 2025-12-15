@@ -81,7 +81,6 @@ export async function POST(request: NextRequest) {
     const receiptUrl = urlData.publicUrl
 
     // Salvar registro do comprovante
-    console.log('Salvando comprovante:', { orderId: parseInt(orderId), paymentMethod, receiptUrl })
     const receipt = await createPaymentReceipt({
       orderId: parseInt(orderId),
       paymentMethod: paymentMethod as 'mpesa' | 'emola',
@@ -97,7 +96,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('Comprovante salvo com sucesso:', receipt)
 
     return NextResponse.json({
       id: receipt.id,

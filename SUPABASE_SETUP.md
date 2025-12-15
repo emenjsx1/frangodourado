@@ -90,3 +90,5 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - O script de migração é idempotente (pode ser executado múltiplas vezes sem duplicar dados)
 
 
+
+

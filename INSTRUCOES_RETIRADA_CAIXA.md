@@ -32,3 +32,5 @@ Este script:
 3. Complete o pagamento
 4. Verifique no dashboard que o pedido aparece como **"Retirar no Caixa"**
 
+
+

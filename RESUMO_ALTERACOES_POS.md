@@ -83,3 +83,5 @@ Execute: `supabase/SCHEMA_COMPLETO.sql` (já inclui POS)
 - ✅ POS funcionando com alerta visual
 - ✅ Visual melhorado e organizado
 
+
+

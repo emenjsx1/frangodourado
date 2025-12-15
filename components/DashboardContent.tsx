@@ -8,6 +8,19 @@ import StarRating from '@/components/StarRating'
 import OrdersSection from '@/components/OrdersSection'
 import TablesSection from '@/components/TablesSection'
 import AttendantCallsSection from '@/components/AttendantCallsSection'
+import FinancialCharts from '@/components/FinancialCharts'
+import CustomerDetailModal from '@/components/CustomerDetailModal'
+import ExportReports from '@/components/ExportReports'
+import FinancialAlerts from '@/components/FinancialAlerts'
+import {
+  calculateRevenueByDay,
+  calculatePaymentMethodDistribution,
+  calculateTopProducts,
+  calculateAverageTicket,
+  calculateOrdersPerDay,
+  calculateConversionRate,
+  type OrderData,
+} from '@/lib/analytics'
 
 interface Store {
   id: number
@@ -254,7 +267,6 @@ export default function DashboardContent({ session }: { session: any }) {
               emolaName: formData.get('emolaName') || undefined,
               emolaPhone: formData.get('emolaPhone') || undefined,
             }
-            console.log('Enviando dados para atualizar:', data)
             try {
               const res = await fetch('/api/stores', {
                 method: 'PUT',
@@ -1321,6 +1333,14 @@ function FinanceSection({ storeId }: { storeId: number }) {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [filtered, setFiltered] = useState<FinanceOrder[]>([])
+  const [revenueData, setRevenueData] = useState<Array<{ date: string; revenue: number; orders: number }>>([])
+  const [paymentData, setPaymentData] = useState<Array<{ method: string; amount: number; count: number; percentage: number }>>([])
+  const [topProducts, setTopProducts] = useState<Array<{ productId: number; productName: string; quantity: number; revenue: number }>>([])
+  const [showCharts, setShowCharts] = useState(true)
+  const [minValue, setMinValue] = useState('')
+  const [maxValue, setMaxValue] = useState('')
+  const [customerFilter, setCustomerFilter] = useState('')
+  const [groupBy, setGroupBy] = useState<'day' | 'week' | 'month'>('day')
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -1350,6 +1370,9 @@ function FinanceSection({ storeId }: { storeId: number }) {
     }
 
     fetchOrders()
+    // Atualizar a cada 15 segundos para manter dados atualizados
+    const interval = setInterval(fetchOrders, 15000)
+    return () => clearInterval(interval)
   }, [storeId])
 
   useEffect(() => {
@@ -1374,10 +1397,35 @@ function FinanceSection({ storeId }: { storeId: number }) {
       list = list.filter(o => new Date(o.createdAt) <= end)
     }
 
+    // Filtro por faixa de valor
+    if (minValue) {
+      const min = parseFloat(minValue)
+      if (!isNaN(min)) {
+        list = list.filter(o => o.totalAmount >= min)
+      }
+    }
+
+    if (maxValue) {
+      const max = parseFloat(maxValue)
+      if (!isNaN(max)) {
+        list = list.filter(o => o.totalAmount <= max)
+      }
+    }
+
+    // Filtro por cliente
+    if (customerFilter.trim()) {
+      const query = customerFilter.toLowerCase().trim()
+      list = list.filter(
+        o =>
+          o.customerName.toLowerCase().includes(query) ||
+          o.customerPhone.includes(query)
+      )
+    }
+
     // Ordenar por data desc
     list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     setFiltered(list)
-  }, [orders, statusFilter, paymentFilter, startDate, endDate])
+  }, [orders, statusFilter, paymentFilter, startDate, endDate, minValue, maxValue, customerFilter])
 
   const totalOrders = filtered.length
   const totalRecebido = filtered
@@ -1386,6 +1434,68 @@ function FinanceSection({ storeId }: { storeId: number }) {
   const totalPendente = filtered
     .filter(o => ['pending_approval', 'approved'].includes(o.status))
     .reduce((sum, o) => sum + (o.totalAmount || 0), 0)
+  
+  // Calcular métricas expandidas
+  const ticketMedio = calculateAverageTicket(filtered)
+  const pedidosPorDia = calculateOrdersPerDay(filtered)
+  const taxaConversao = calculateConversionRate(filtered)
+
+  // Calcular dados para gráficos
+  useEffect(() => {
+    if (filtered.length === 0) {
+      setRevenueData([])
+      setPaymentData([])
+      setTopProducts([])
+      return
+    }
+
+    // Converter para formato OrderData
+    const orderData: OrderData[] = filtered.map(o => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      totalAmount: o.totalAmount,
+      paymentMethod: o.paymentMethod,
+      status: o.status,
+      customerName: o.customerName,
+      customerPhone: o.customerPhone,
+      createdAt: o.createdAt,
+    }))
+
+    // Calcular receita agrupada
+    const revenue = calculateRevenueByDay(orderData) // Por enquanto sempre por dia, pode ser expandido depois
+    setRevenueData(revenue)
+
+    // Calcular distribuição por método de pagamento
+    const payment = calculatePaymentMethodDistribution(orderData)
+    setPaymentData(payment)
+
+    // Calcular produtos mais vendidos
+    const fetchOrderItems = async (orderId: number) => {
+      try {
+        const res = await fetch(`/api/orders/${orderId}/items`)
+        if (res.ok) {
+          const items = await res.json()
+          return items.map((item: any) => ({
+            productId: item.productId,
+            productName: item.product?.name,
+            quantity: item.quantity,
+            price: item.price,
+          }))
+        }
+        return []
+      } catch (err) {
+        console.error(`Erro ao buscar itens do pedido ${orderId}:`, err)
+        return []
+      }
+    }
+
+    calculateTopProducts(orderData, fetchOrderItems).then(products => {
+      setTopProducts(products)
+    }).catch(err => {
+      console.error('Erro ao calcular produtos mais vendidos:', err)
+      setTopProducts([])
+    })
+  }, [filtered])
 
   const formatStatus = (status: OrderStatus) => {
     switch (status) {
@@ -1438,8 +1548,11 @@ function FinanceSection({ storeId }: { storeId: number }) {
 
   return (
     <div className="space-y-6">
-      {/* Cards de resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Alertas e Notificações */}
+      <FinancialAlerts orders={filtered} />
+
+      {/* Cards de resumo expandidos */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <div className="p-4 border-2 border-green-600 rounded-lg bg-green-50">
           <p className="text-sm text-green-800 font-semibold">Total Recebido</p>
           <p className="text-2xl font-bold text-green-700">MT {totalRecebido.toFixed(0)}</p>
@@ -1452,10 +1565,47 @@ function FinanceSection({ storeId }: { storeId: number }) {
           <p className="text-sm text-blue-800 font-semibold">Pedidos no período</p>
           <p className="text-2xl font-bold text-blue-700">{totalOrders}</p>
         </div>
+        <div className="p-4 border-2 border-purple-600 rounded-lg bg-purple-50">
+          <p className="text-sm text-purple-800 font-semibold">Ticket Médio</p>
+          <p className="text-2xl font-bold text-purple-700">MT {ticketMedio.toFixed(0)}</p>
+        </div>
+        <div className="p-4 border-2 border-indigo-600 rounded-lg bg-indigo-50">
+          <p className="text-sm text-indigo-800 font-semibold">Pedidos/Dia</p>
+          <p className="text-2xl font-bold text-indigo-700">{pedidosPorDia.toFixed(1)}</p>
+        </div>
+        <div className="p-4 border-2 border-teal-600 rounded-lg bg-teal-50">
+          <p className="text-sm text-teal-800 font-semibold">Taxa Conversão</p>
+          <p className="text-2xl font-bold text-teal-700">{taxaConversao.toFixed(1)}%</p>
+        </div>
       </div>
 
-      {/* Filtros */}
+      {/* Botões de ação */}
+      <div className="flex justify-end gap-3">
+        <ExportReports type="financial" startDate={startDate} endDate={endDate} />
+        <button
+          onClick={() => setShowCharts(!showCharts)}
+          className="bg-red-strong text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-dark transition text-sm"
+        >
+          {showCharts ? 'Ocultar Gráficos' : 'Mostrar Gráficos'}
+        </button>
+      </div>
+
+      {/* Gráficos - Lazy Loading */}
+      {showCharts && revenueData.length > 0 && (
+        <div>
+          <FinancialCharts
+            revenueData={revenueData}
+            paymentData={paymentData}
+            topProducts={topProducts}
+          />
+        </div>
+      )}
+
+      {/* Filtros Avançados */}
       <div className="bg-gray-50 p-4 border-2 border-gray-200 rounded-lg space-y-4">
+        <h3 className="text-lg font-bold text-black-dark">Filtros</h3>
+        
+        {/* Primeira linha de filtros */}
         <div className="flex flex-wrap gap-3">
           <div>
             <label className="block text-xs font-semibold text-black-dark mb-1">Status</label>
@@ -1507,13 +1657,80 @@ function FinanceSection({ storeId }: { storeId: number }) {
             />
           </div>
         </div>
+
+        {/* Segunda linha de filtros avançados */}
+        <div className="flex flex-wrap gap-3">
+          <div>
+            <label className="block text-xs font-semibold text-black-dark mb-1">Valor Mínimo (MT)</label>
+            <input
+              type="number"
+              value={minValue}
+              onChange={e => setMinValue(e.target.value)}
+              placeholder="0"
+              className="px-3 py-2 border-2 border-red-dark rounded-lg text-sm w-32"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-black-dark mb-1">Valor Máximo (MT)</label>
+            <input
+              type="number"
+              value={maxValue}
+              onChange={e => setMaxValue(e.target.value)}
+              placeholder="999999"
+              className="px-3 py-2 border-2 border-red-dark rounded-lg text-sm w-32"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-black-dark mb-1">Buscar Cliente</label>
+            <input
+              type="text"
+              value={customerFilter}
+              onChange={e => setCustomerFilter(e.target.value)}
+              placeholder="Nome ou telefone..."
+              className="px-3 py-2 border-2 border-red-dark rounded-lg text-sm w-48"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-black-dark mb-1">Agrupar por</label>
+            <select
+              value={groupBy}
+              onChange={e => setGroupBy(e.target.value as 'day' | 'week' | 'month')}
+              className="px-3 py-2 border-2 border-red-dark rounded-lg text-sm"
+            >
+              <option value="day">Dia</option>
+              <option value="week">Semana</option>
+              <option value="month">Mês</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Botão para limpar filtros */}
+        <div className="flex justify-end">
+          <button
+            onClick={() => {
+              setStatusFilter('all')
+              setPaymentFilter('all')
+              setStartDate('')
+              setEndDate('')
+              setMinValue('')
+              setMaxValue('')
+              setCustomerFilter('')
+              setGroupBy('day')
+            }}
+            className="bg-gray-300 text-black-dark px-4 py-2 rounded-lg font-semibold hover:bg-gray-400 transition text-sm"
+          >
+            Limpar Filtros
+          </button>
+        </div>
       </div>
 
-      {/* Lista de transações */}
+      {/* Lista de transações - Com paginação */}
       <div className="border-2 border-red-dark rounded-lg overflow-hidden">
-        <div className="bg-red-50 px-4 py-3 border-b border-red-dark font-semibold text-black-dark">Transações</div>
+        <div className="bg-red-50 px-4 py-3 border-b border-red-dark font-semibold text-black-dark flex justify-between items-center">
+          <span>Transações ({filtered.length})</span>
+        </div>
         <div className="divide-y divide-gray-200 max-h-[480px] overflow-y-auto">
-          {filtered.map(order => (
+          {filtered.slice(0, 100).map(order => (
             <div key={order.id} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
                 <p className="font-semibold text-black-dark">{order.orderNumber}</p>
@@ -1551,6 +1768,7 @@ function CustomersSection({ storeId }: { storeId: number }) {
   const [customers, setCustomers] = useState<CustomerSummary[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerSummary | null>(null)
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -1617,20 +1835,27 @@ function CustomersSection({ storeId }: { storeId: number }) {
           <h3 className="text-xl font-bold text-black-dark">Clientes</h3>
           <p className="text-sm text-gray-600">Total: {customers.length}</p>
         </div>
-        <input
-          type="text"
-          placeholder="Buscar por nome ou telefone..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="w-full sm:w-64 px-3 py-2 border-2 border-red-dark rounded-lg text-sm"
-        />
+        <div className="flex gap-3">
+          <ExportReports type="customers" />
+          <input
+            type="text"
+            placeholder="Buscar por nome ou telefone..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full sm:w-64 px-3 py-2 border-2 border-red-dark rounded-lg text-sm"
+          />
+        </div>
       </div>
 
       <div className="border-2 border-red-dark rounded-lg overflow-hidden">
         <div className="bg-red-50 px-4 py-3 border-b border-red-dark font-semibold text-black-dark">CRM de Clientes</div>
         <div className="divide-y divide-gray-200 max-h-[520px] overflow-y-auto">
           {customers.map((c, idx) => (
-            <div key={idx} className="px-4 py-3 grid grid-cols-1 sm:grid-cols-4 gap-2 items-center">
+            <div
+              key={idx}
+              className="px-4 py-3 grid grid-cols-1 sm:grid-cols-4 gap-2 items-center hover:bg-gray-50 cursor-pointer transition"
+              onClick={() => setSelectedCustomer(c)}
+            >
               <div>
                 <p className="font-semibold text-black-dark">{c.customerName || 'Cliente'}</p>
                 <p className="text-xs text-gray-600">{c.customerPhone || '—'}</p>
@@ -1644,7 +1869,9 @@ function CustomersSection({ storeId }: { storeId: number }) {
                 <p>{c.ordersCount}</p>
               </div>
               <div className="text-xs text-gray-600">
-                Última atualização: agora
+                <button className="text-red-strong hover:text-red-dark font-semibold">
+                  Ver detalhes →
+                </button>
               </div>
             </div>
           ))}
@@ -1653,6 +1880,19 @@ function CustomersSection({ storeId }: { storeId: number }) {
           )}
         </div>
       </div>
+
+      {/* Modal de Detalhes do Cliente */}
+      {selectedCustomer && (
+        <CustomerDetailModal
+          isOpen={!!selectedCustomer}
+          onClose={() => setSelectedCustomer(null)}
+          customerPhone={selectedCustomer.customerPhone}
+          customerName={selectedCustomer.customerName}
+          totalSpent={selectedCustomer.totalSpent}
+          ordersCount={selectedCustomer.ordersCount}
+          allOrders={orders}
+        />
+      )}
     </div>
   )
 }

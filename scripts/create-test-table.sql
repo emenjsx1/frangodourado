@@ -19,3 +19,5 @@ ON CONFLICT (store_id, number) DO NOTHING;
 -- Verificar se foi criada
 SELECT * FROM tables WHERE number = 1;
 
+
+

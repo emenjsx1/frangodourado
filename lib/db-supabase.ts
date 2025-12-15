@@ -227,7 +227,6 @@ export async function updateStore(id: number, store: Partial<Store>) {
   if (store.emolaName !== undefined) updateData.emola_name = store.emolaName || null
   if (store.emolaPhone !== undefined) updateData.emola_phone = store.emolaPhone || null
   
-  console.log('Atualizando loja no Supabase:', { id, updateData })
   
   const { data, error } = await supabaseAdmin
     .from('stores')
@@ -246,7 +245,6 @@ export async function updateStore(id: number, store: Partial<Store>) {
     return null
   }
   
-  console.log('Loja atualizada com sucesso:', data)
   
   return {
     id: data.id,
@@ -669,13 +667,6 @@ export async function createPaymentReceipt(receipt: Omit<PaymentReceipt, 'id' | 
     return null
   }
   
-  console.log('Criando comprovante no banco:', {
-    order_id: receipt.orderId,
-    payment_method: receipt.paymentMethod,
-    receipt_url: receipt.receiptUrl,
-    is_approved: receipt.isApproved,
-  })
-  
   const { data, error } = await supabaseAdmin
     .from('payment_receipts')
     .insert({
@@ -698,8 +689,6 @@ export async function createPaymentReceipt(receipt: Omit<PaymentReceipt, 'id' | 
     console.error('Nenhum dado retornado ao criar comprovante')
     return null
   }
-  
-  console.log('Comprovante criado com sucesso:', data)
   
   return {
     id: data.id,

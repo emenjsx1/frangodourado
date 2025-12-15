@@ -33,3 +33,5 @@ JOIN stores s ON s.id = t.store_id
 WHERE t.number = 1;
 ```
 
+
+

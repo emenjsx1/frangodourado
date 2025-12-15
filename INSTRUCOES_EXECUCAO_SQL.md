@@ -85,3 +85,5 @@ AND column_name IN ('mpesa_name', 'emola_name');
 - O script verifica antes de criar constraints
 - Pode executar múltiplas vezes sem problemas
 
+
+

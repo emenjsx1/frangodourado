@@ -52,3 +52,5 @@ CREATE INDEX IF NOT EXISTS idx_reviews_order_id ON reviews(order_id);
 -- FIM DA MIGRAÇÃO
 -- ============================================
 
+
+

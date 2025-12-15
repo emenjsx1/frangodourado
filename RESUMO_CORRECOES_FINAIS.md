@@ -85,3 +85,5 @@
 - ✅ Visual melhorado e organizado
 - ✅ Botão "Baixar App" removido
 
+
+

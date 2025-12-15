@@ -75,3 +75,5 @@ AND column_name IN ('mpesa_name', 'mpesa_phone', 'emola_name', 'emola_phone');
 2. Tente salvar os métodos de pagamento novamente
 3. Os dados devem ser salvos corretamente agora
 
+
+

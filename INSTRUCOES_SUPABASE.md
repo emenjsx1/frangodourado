@@ -91,3 +91,5 @@ Após executar a migração, você pode verificar:
 - As políticas RLS permitem leitura pública e escrita apenas para autenticados
 
 
+
+

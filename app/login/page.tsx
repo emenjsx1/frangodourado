@@ -31,7 +31,8 @@ export default function LoginPage() {
         router.refresh()
       }
     } catch (err) {
-      setError('Erro ao fazer login')
+      console.error('Erro ao fazer login:', err)
+      setError('Erro ao fazer login. Tente novamente.')
     } finally {
       setLoading(false)
     }
@@ -51,7 +52,7 @@ export default function LoginPage() {
             }}
           />
           <h1 className="text-3xl font-bold text-black-dark text-center">
-        
+            Login
           </h1>
         </div>
 

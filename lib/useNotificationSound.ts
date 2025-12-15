@@ -32,7 +32,7 @@ export function useNotificationSound(soundType: SoundType = 'order') {
         }
         
         setIsEnabled(true)
-        console.log('✅ Sistema de notificação sonora ativado')
+        // Sistema de notificação sonora ativado
       } catch (error) {
         console.warn('⚠️ Não foi possível ativar o sistema de som:', error)
       }
@@ -162,12 +162,12 @@ export function useNotificationSound(soundType: SoundType = 'order') {
     audio.addEventListener('canplaythrough', () => {
       setUseFile(true)
       audioElementRef.current = audio
-      console.log(`✅ Arquivo de áudio carregado: ${audioPath}`)
+      // Arquivo de áudio carregado
     })
     
     audio.addEventListener('error', () => {
       setUseFile(false)
-      console.log(`ℹ️ Arquivo de áudio não encontrado (${audioPath}), usando som gerado`)
+      // Arquivo de áudio não encontrado, usando som gerado
     })
     
     audio.load()
@@ -190,7 +190,7 @@ export function useNotificationSound(soundType: SoundType = 'order') {
       // Se o contexto estiver suspenso, tentar retomar
       if (audioContext.state === 'suspended') {
         audioContext.resume().then(() => {
-          console.log('🔊 Contexto de áudio retomado')
+          // Contexto de áudio retomado
         }).catch(err => {
           console.warn('⚠️ Não foi possível retomar o contexto de áudio:', err)
           return

@@ -91,3 +91,5 @@ payment-receipts/receipts/123/550e8400-e29b-41d4-a716-446655440000.jpg
 - ✅ Tamanho máximo recomendado: 5MB
 - ✅ Formatos aceitos: JPG, PNG, PDF
 
+
+
