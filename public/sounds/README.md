@@ -37,3 +37,5 @@ Coloque os seguintes arquivos nesta pasta:
 
 Após adicionar os arquivos, use os botões "Testar Som" no dashboard para verificar se estão funcionando.
 
+
+

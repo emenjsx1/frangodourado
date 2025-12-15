@@ -66,7 +66,9 @@ export default function DashboardContent({ session }: { session: any }) {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
-  const [activeTab, setActiveTab] = useState<'categories' | 'products' | 'reviews' | 'orders' | 'tables' | 'attendant-calls'>('categories')
+  const [activeTab, setActiveTab] = useState<
+    'categories' | 'products' | 'reviews' | 'orders' | 'tables' | 'attendant-calls' | 'finance' | 'customers'
+  >('categories')
 
   useEffect(() => {
     fetchStore()
@@ -415,6 +417,16 @@ export default function DashboardContent({ session }: { session: any }) {
                 Pedidos
               </button>
               <button
+                onClick={() => setActiveTab('finance')}
+                className={`px-4 sm:px-6 py-2 rounded-lg transition font-semibold text-xs sm:text-sm whitespace-nowrap ${
+                  activeTab === 'finance'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-white text-black-dark hover:bg-green-600 hover:text-white border-2 border-green-600'
+                }`}
+              >
+                Financeiro
+              </button>
+              <button
                 onClick={() => setActiveTab('tables')}
                 className={`px-4 sm:px-6 py-2 rounded-lg transition font-semibold text-xs sm:text-sm whitespace-nowrap ${
                   activeTab === 'tables'
@@ -433,6 +445,16 @@ export default function DashboardContent({ session }: { session: any }) {
                 }`}
               >
                 🔔 Atendente
+              </button>
+              <button
+                onClick={() => setActiveTab('customers')}
+                className={`px-4 sm:px-6 py-2 rounded-lg transition font-semibold text-xs sm:text-sm whitespace-nowrap ${
+                  activeTab === 'customers'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-black-dark hover:bg-blue-600 hover:text-white border-2 border-blue-600'
+                }`}
+              >
+                Clientes
               </button>
             </nav>
           </div>
@@ -455,12 +477,20 @@ export default function DashboardContent({ session }: { session: any }) {
               <OrdersSection storeId={store.id} />
             )}
 
+            {activeTab === 'finance' && (
+              <FinanceSection storeId={store.id} />
+            )}
+
             {activeTab === 'tables' && (
               <TablesSection storeId={store.id} />
             )}
 
             {activeTab === 'attendant-calls' && (
               <AttendantCallsSection storeId={store.id} />
+            )}
+
+            {activeTab === 'customers' && (
+              <CustomersSection storeId={store.id} />
             )}
           </div>
         </div>
@@ -1254,6 +1284,375 @@ function ReviewsSection({ storeId }: { storeId: number }) {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+// -------------------------------
+// Financeiro
+// -------------------------------
+type OrderPaymentMethod = 'cash' | 'mpesa' | 'emola' | 'pos'
+type OrderStatus =
+  | 'pending_approval'
+  | 'approved'
+  | 'paid'
+  | 'preparing'
+  | 'ready'
+  | 'delivered'
+  | 'cancelled'
+
+interface FinanceOrder {
+  id: number
+  orderNumber: string
+  totalAmount: number
+  paymentMethod: OrderPaymentMethod
+  status: OrderStatus
+  customerName: string
+  customerPhone: string
+  createdAt: string
+}
+
+function FinanceSection({ storeId }: { storeId: number }) {
+  const [orders, setOrders] = useState<FinanceOrder[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | OrderStatus>('all')
+  const [paymentFilter, setPaymentFilter] = useState<'all' | OrderPaymentMethod>('all')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [filtered, setFiltered] = useState<FinanceOrder[]>([])
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const res = await fetch('/api/orders')
+        if (res.ok) {
+          const data = await res.json()
+          setOrders(
+            data.map((o: any) => ({
+              id: o.id,
+              orderNumber: o.orderNumber,
+              totalAmount: o.totalAmount,
+              paymentMethod: o.paymentMethod,
+              status: o.status,
+              customerName: o.customerName,
+              customerPhone: o.customerPhone,
+              createdAt: o.createdAt || new Date().toISOString(),
+            }))
+          )
+        }
+      } catch (err) {
+        console.error('Erro ao buscar pedidos (financeiro):', err)
+        setError('Erro ao carregar pedidos')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchOrders()
+  }, [storeId])
+
+  useEffect(() => {
+    let list = [...orders]
+
+    if (statusFilter !== 'all') {
+      list = list.filter(o => o.status === statusFilter)
+    }
+
+    if (paymentFilter !== 'all') {
+      list = list.filter(o => o.paymentMethod === paymentFilter)
+    }
+
+    if (startDate) {
+      const start = new Date(startDate)
+      list = list.filter(o => new Date(o.createdAt) >= start)
+    }
+
+    if (endDate) {
+      const end = new Date(endDate)
+      end.setHours(23, 59, 59, 999)
+      list = list.filter(o => new Date(o.createdAt) <= end)
+    }
+
+    // Ordenar por data desc
+    list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    setFiltered(list)
+  }, [orders, statusFilter, paymentFilter, startDate, endDate])
+
+  const totalOrders = filtered.length
+  const totalRecebido = filtered
+    .filter(o => ['paid', 'preparing', 'ready', 'delivered'].includes(o.status))
+    .reduce((sum, o) => sum + (o.totalAmount || 0), 0)
+  const totalPendente = filtered
+    .filter(o => ['pending_approval', 'approved'].includes(o.status))
+    .reduce((sum, o) => sum + (o.totalAmount || 0), 0)
+
+  const formatStatus = (status: OrderStatus) => {
+    switch (status) {
+      case 'pending_approval':
+        return 'Aguardando aprovação'
+      case 'approved':
+        return 'Aprovado'
+      case 'paid':
+        return 'Pago'
+      case 'preparing':
+        return 'Preparando'
+      case 'ready':
+        return 'Pronto'
+      case 'delivered':
+        return 'Entregue'
+      case 'cancelled':
+        return 'Cancelado'
+      default:
+        return status
+    }
+  }
+
+  const formatPayment = (method: OrderPaymentMethod) => {
+    switch (method) {
+      case 'cash':
+        return 'Dinheiro'
+      case 'mpesa':
+        return 'M-Pesa'
+      case 'emola':
+        return 'Emola'
+      case 'pos':
+        return 'POS'
+      default:
+        return method
+    }
+  }
+
+  const formatDateShort = (date: string) => {
+    const d = new Date(date)
+    return d.toLocaleString('pt-MZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  }
+
+  if (loading) {
+    return <p className="text-black-dark">Carregando financeiro...</p>
+  }
+
+  if (error) {
+    return <p className="text-red-600">{error}</p>
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Cards de resumo */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-4 border-2 border-green-600 rounded-lg bg-green-50">
+          <p className="text-sm text-green-800 font-semibold">Total Recebido</p>
+          <p className="text-2xl font-bold text-green-700">MT {totalRecebido.toFixed(0)}</p>
+        </div>
+        <div className="p-4 border-2 border-yellow-500 rounded-lg bg-yellow-50">
+          <p className="text-sm text-yellow-800 font-semibold">Total Pendente</p>
+          <p className="text-2xl font-bold text-yellow-700">MT {totalPendente.toFixed(0)}</p>
+        </div>
+        <div className="p-4 border-2 border-blue-600 rounded-lg bg-blue-50">
+          <p className="text-sm text-blue-800 font-semibold">Pedidos no período</p>
+          <p className="text-2xl font-bold text-blue-700">{totalOrders}</p>
+        </div>
+      </div>
+
+      {/* Filtros */}
+      <div className="bg-gray-50 p-4 border-2 border-gray-200 rounded-lg space-y-4">
+        <div className="flex flex-wrap gap-3">
+          <div>
+            <label className="block text-xs font-semibold text-black-dark mb-1">Status</label>
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value as any)}
+              className="px-3 py-2 border-2 border-red-dark rounded-lg text-sm"
+            >
+              <option value="all">Todos</option>
+              <option value="pending_approval">Aguardando aprovação</option>
+              <option value="approved">Aprovado</option>
+              <option value="paid">Pago</option>
+              <option value="preparing">Preparando</option>
+              <option value="ready">Pronto</option>
+              <option value="delivered">Entregue</option>
+              <option value="cancelled">Cancelado</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-black-dark mb-1">Método</label>
+            <select
+              value={paymentFilter}
+              onChange={e => setPaymentFilter(e.target.value as any)}
+              className="px-3 py-2 border-2 border-red-dark rounded-lg text-sm"
+            >
+              <option value="all">Todos</option>
+              <option value="cash">Dinheiro</option>
+              <option value="mpesa">M-Pesa</option>
+              <option value="emola">Emola</option>
+              <option value="pos">POS</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-black-dark mb-1">Data inicial</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+              className="px-3 py-2 border-2 border-red-dark rounded-lg text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-black-dark mb-1">Data final</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={e => setEndDate(e.target.value)}
+              className="px-3 py-2 border-2 border-red-dark rounded-lg text-sm"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Lista de transações */}
+      <div className="border-2 border-red-dark rounded-lg overflow-hidden">
+        <div className="bg-red-50 px-4 py-3 border-b border-red-dark font-semibold text-black-dark">Transações</div>
+        <div className="divide-y divide-gray-200 max-h-[480px] overflow-y-auto">
+          {filtered.map(order => (
+            <div key={order.id} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <p className="font-semibold text-black-dark">{order.orderNumber}</p>
+                <p className="text-xs text-gray-600">{order.customerName} • {order.customerPhone}</p>
+                <p className="text-xs text-gray-500">{formatDateShort(order.createdAt)}</p>
+              </div>
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-sm font-semibold text-black-dark">MT {order.totalAmount.toFixed(0)}</span>
+                <span className="text-xs px-2 py-1 rounded bg-gray-200 text-black-dark">{formatPayment(order.paymentMethod)}</span>
+                <span className="text-xs px-2 py-1 rounded bg-gray-100 text-black-dark">{formatStatus(order.status)}</span>
+              </div>
+            </div>
+          ))}
+          {filtered.length === 0 && (
+            <p className="text-center py-6 text-gray-600">Nenhuma transação encontrada.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// -------------------------------
+// CRM Clientes
+// -------------------------------
+interface CustomerSummary {
+  customerName: string
+  customerPhone: string
+  totalSpent: number
+  ordersCount: number
+}
+
+function CustomersSection({ storeId }: { storeId: number }) {
+  const [orders, setOrders] = useState<FinanceOrder[]>([])
+  const [customers, setCustomers] = useState<CustomerSummary[]>([])
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const res = await fetch('/api/orders')
+        if (res.ok) {
+          const data = await res.json()
+          setOrders(
+            data.map((o: any) => ({
+              id: o.id,
+              orderNumber: o.orderNumber,
+              totalAmount: o.totalAmount,
+              paymentMethod: o.paymentMethod,
+              status: o.status,
+              customerName: o.customerName,
+              customerPhone: o.customerPhone,
+              createdAt: o.createdAt || new Date().toISOString(),
+            }))
+          )
+        }
+      } catch (err) {
+        console.error('Erro ao buscar pedidos (CRM):', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchOrders()
+  }, [storeId])
+
+  useEffect(() => {
+    const map = new Map<string, CustomerSummary>()
+    orders.forEach(o => {
+      if (o.status === 'cancelled') return
+      const key = o.customerPhone || o.customerName || String(o.id)
+      const current = map.get(key) || { customerName: o.customerName, customerPhone: o.customerPhone, totalSpent: 0, ordersCount: 0 }
+      current.totalSpent += o.totalAmount || 0
+      current.ordersCount += 1
+      current.customerName = current.customerName || o.customerName
+      current.customerPhone = current.customerPhone || o.customerPhone
+      map.set(key, current)
+    })
+    let list = Array.from(map.values())
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      list = list.filter(c =>
+        (c.customerName || '').toLowerCase().includes(q) ||
+        (c.customerPhone || '').toLowerCase().includes(q)
+      )
+    }
+    // order by totalSpent desc
+    list.sort((a, b) => b.totalSpent - a.totalSpent)
+    setCustomers(list)
+  }, [orders, search])
+
+  if (loading) {
+    return <p className="text-black-dark">Carregando clientes...</p>
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-xl font-bold text-black-dark">Clientes</h3>
+          <p className="text-sm text-gray-600">Total: {customers.length}</p>
+        </div>
+        <input
+          type="text"
+          placeholder="Buscar por nome ou telefone..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full sm:w-64 px-3 py-2 border-2 border-red-dark rounded-lg text-sm"
+        />
+      </div>
+
+      <div className="border-2 border-red-dark rounded-lg overflow-hidden">
+        <div className="bg-red-50 px-4 py-3 border-b border-red-dark font-semibold text-black-dark">CRM de Clientes</div>
+        <div className="divide-y divide-gray-200 max-h-[520px] overflow-y-auto">
+          {customers.map((c, idx) => (
+            <div key={idx} className="px-4 py-3 grid grid-cols-1 sm:grid-cols-4 gap-2 items-center">
+              <div>
+                <p className="font-semibold text-black-dark">{c.customerName || 'Cliente'}</p>
+                <p className="text-xs text-gray-600">{c.customerPhone || '—'}</p>
+              </div>
+              <div className="text-sm text-black-dark">
+                <p className="font-semibold">Total Gasto</p>
+                <p className="text-green-700 font-bold">MT {c.totalSpent.toFixed(0)}</p>
+              </div>
+              <div className="text-sm text-black-dark">
+                <p className="font-semibold">Pedidos</p>
+                <p>{c.ordersCount}</p>
+              </div>
+              <div className="text-xs text-gray-600">
+                Última atualização: agora
+              </div>
+            </div>
+          ))}
+          {customers.length === 0 && (
+            <p className="text-center py-6 text-gray-600">Nenhum cliente encontrado.</p>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
