@@ -1313,7 +1313,7 @@ type OrderStatus =
   | 'delivered'
   | 'cancelled'
 
-interface FinanceOrder {
+export interface FinanceOrder {
   id: number
   orderNumber: string
   totalAmount: number
